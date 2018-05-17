@@ -9,7 +9,7 @@
 # # # Checks email on new Contact and adds it to contactsPers or contactsFirm
 # # # based on FirmEmails
 #
-#/home/les/Downloads/GAIC-LifeLic-CurrentMonth.csv
+# /home/les/Downloads/GAIC-LifeLic-CurrentMonth.csv
 # # imports
 #
 
@@ -36,9 +36,10 @@ def readCsv(fn, month):
     try:
         with open(fn, newline='') as csvfile:
             reader = csv.DictReader(csvfile)
-            contactsPers = Contacts("NO_Bucket")   # contacts w/ personal email
-            # must be updated to use loadContacts
-            contactsFirm = Contacts("NO_Bucket")   # contacts w/ firm email
+            contactsPers = Contacts("dgl-contacts")  # contacts w/pers email
+            contactsPers = contactsPers.loadContacts()
+            contactsFirm = Contacts("firm-contacts")   # contacts w/ firm email
+        # Will be stored in dgl-contacts bucket with object id firm-contacts
             firm_emails = FirmEmails()
             for row in reader:
                 # print(row['First Name'], row['Last Name'])# Just test reading
@@ -63,7 +64,9 @@ def readCsv(fn, month):
                     contactsFirm.addContact(contact)
                 else:
                     contactsPers.addContact(contact)
-
+# Store the new contactsFirm - both pers & firm_emails
+        contactsPers.storeContacts()
+        contactsFirm.storeContacts()
     except (FileNotFoundError, csv.Error) as e:
         print(e)
         print(e.args)

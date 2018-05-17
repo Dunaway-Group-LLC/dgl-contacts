@@ -6,7 +6,7 @@
 # # imports
 #
 import boto3
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 import pickle
 from io import BytesIO
 
@@ -54,8 +54,8 @@ class Contacts:
     def updateContact(self,  Contact):
         pass
 
-    def loadContacts(contacts):
-        """loadContacts(contacts)  # contacts is empty instance of Contacts
+    def loadContacts(self):
+        """loadContacts()
                 Gets pickled Contacts object from S2
                 unpickle
                 returns Contacts
@@ -67,55 +67,76 @@ class Contacts:
 #
 # # Prove we can talk to bucket
 #
-        bucket = s3.Bucket(contacts.bucketName)
+        bucket = s3.Bucket(self.bucketName)
         for obj in bucket.objects.all():
-            print(obj.key)
+            print("bucket keys", obj.key)
 
-        contacts = BytesIO()   # unpickled comes as bytes
+#        self.contacts = BytesIO()   # unpickled comes as bytes
         try:
-            contacts = s3.Object(
-                contacts.bucketName,
-                'contacts').get()["Body"].read()    # get pickled Contacts
-            contacts = pickle.load(contacts)  # unpickle
+            with BytesIO() as data:
+                s3.Bucket(self.bucketName).download_fileobj("contacts", data)
+                data.seek(0)    # move back to the beginning after writing
+                print("unpickel:", data)
+                self.contacts = pickle.load(data)
+                print("Unpickeled: ", self.contacts)
         except ClientError:
             print("The object does not exist.")
-            createContactsBucket(contacts.bucketName)   # No existing bucket
-        return(contacts)
+            self.createContactsBucket(self.bucketName)   # No existing bucket
+        return(self)
+
+#
+# # Pickle and store Contacts
+
+    def storeContacts(self):
+            """
+                Pickle and save in s3
+            """
+            s3 = boto3.resource('s3')                   # get S3.Object
+            print("Bucket Name:", self.bucketName)
+            body = pickle.dumps(self.contacts)     # serialized Contacts dict
+    # Store contacts with firm email seperate, lookup pers email later
+            if self.bucketName == "firm-contacts":
+                objid = self.bucketName
+                self.bucketName = "dgl-contacts"
+            else:
+                objid = "contacts"
+            try:
+                s3.Object(self.bucketName, objid).put(Body=body)
+            except ParamValidationError as e:
+                print("Parameter validation error: %s" % e)
+            except ClientError as e:
+                print("Unexpected error: %s" % e)
+                print(e.response['Error']['Code'])
 
 
-def storeContacts(self):
+
+    def confirmContact():
+            """confirmContact()
+                    Sends SES email to new contact
+            """
+            print("In confirmContact")
+            pass
+
+    def createContactsBucket(bucketName):
         """
-            Pickle and save in s3
-        """
-
-
-def confirmContact():
-        """confirmContact()
-                Sends SES email to new contact
-        """
-        print("In confirmContact")
-        pass
-
-
-def createContactsBucket(bucket):
-    """
         Create Contacts - put new Contacts object in S3 bucket 'dgl-contacts'
-    """
-    print("bucket type:", type(bucket))
+        """
+        print("bucket type:", type(bucketName))
 
-    s3 = boto3.resource('s3')                   # get S3.Object
+        s3 = boto3.resource('s3')                   # get S3.Object
 
-    contacts = Contacts(bucket)        # Contacts object with empty dictionary
-    body = pickle.dumps(contacts)      # serialized Contacts object
-    try:
-        s3.Object(contacts.bucket, 'contacts').put(Body=body)
-    except Exception as e:
-        print(type(e))
-        print(e.args)
-        print(e)
+        contacts = Contacts(bucketName)    # Contacts object with empty dict
+        body = pickle.dumps(contacts)      # serialized Contacts object
+        try:
+            s3.Object(contacts.bucketName, 'contacts').put(Body=body)
+            return(contacts)
+        except ParamValidationError as e:
+            print("Parameter validation error: %s" % e)
+        except ClientError as e:
+            print("Unexpected error: %s" % e)
+            print(e.response['Error']['Code'])
 
-    for obj in contacts.bucket.objects.all():
-        print(obj.key)
+
 
 
 """
