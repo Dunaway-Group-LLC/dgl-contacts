@@ -22,8 +22,7 @@ class Contact:
     """
 
     def __init__(
-            self, email,  first_name="",  last_name="",  product="", attrs={}
-            ):
+            self, email,  first_name="",  last_name="",  product="", attrs={}):
         self.first_name = first_name
         self.last_name = last_name
         self.email = email
@@ -41,18 +40,49 @@ class Contacts:
 #
 
     def __init__(self,  bucketName):
+        """__init__(bucketName)
+            create instance of Contacts with bucketName
+            contacts instance var is init to empty dict
+        """
         self.contacts = {}          # Dictionary holding Contacts, key is email
         self.bucketName = bucketName    # Bucket name holding Contacts object
 
-    def addContact(self,  Contact):
-        print("Add Contact")
-        pass
+    def addContact(self,  contact):
+        """ addContact(contact)
+            contact must contail email; can be otherwise empty
+            key - contact.email - must not be in Contacts
+        """
+        key = contact.email         # email is key for Contacts dict
+        if key in self.contacts:    # Prevent dupes
+            return(False)
+        else:
+            self.contacts[key] = contact
+            return(True)
 
-    def getContact(self, Contact):
-        pass
+    def getContact(self, contact):
+        """getContact(contact)
+            parm contact has only email
+                is returned filled
+        """
+        key = contact.email
+        if key in self.contacts:
+            contact = self.contacts[key]
+            return(True)
+        else:
+            return(False)
 
-    def updateContact(self,  Contact):
-        pass
+    def updateContact(self,  contact):
+        """updateContact(contact)
+            parm contact must have email that is key in Contacts
+            returns True if key found and Contact updated
+            returns False if key not in Contacts
+        """
+        key = contact.email
+        if key in self.contacts:
+            self.contacts[key] = contact
+            return(True)
+        else:
+            return(False)
 
     def loadContacts(self):
         """loadContacts()
@@ -152,10 +182,14 @@ s3_resource.Object(bucket,path).put(Body=pickle_buffer.getvalue())
 
 class Product:
     """class Product - a Product is something being marketed
-            name, desc, campaigns, dates
+            name - string
+            owner - Person responsible for Product
+            desc - description of the Product
+            campaigns - dictionary of Campaigns
+            dates - dictionary of dates {release:date, ???}
     """
 
-    def __init__(self, name,  desc, start_date,  due_date):
+    def __init__(self, name, owner,  desc, release_date):
         self.name = name
         self.desc = desc
         self.dates = {"start_date": start_date, "due_date": due_date}

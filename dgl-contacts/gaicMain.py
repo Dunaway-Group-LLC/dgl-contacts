@@ -11,7 +11,7 @@
 #
 # /home/les/Downloads/GAIC-LifeLic-CurrentMonth.csv
 # # imports
-#
+# will it save? yes it did
 
 import sys
 import getopt
@@ -36,11 +36,14 @@ def readCsv(fn, month):
     try:
         with open(fn, newline='') as csvfile:
             reader = csv.DictReader(csvfile)
+
             contactsPers = Contacts("dgl-contacts")  # contacts w/pers email
             contactsPers = contactsPers.loadContacts()
             contactsFirm = Contacts("firm-contacts")   # contacts w/ firm email
         # Will be stored in dgl-contacts bucket with object id firm-contacts
-            firm_emails = FirmEmails()
+
+            firm_emails = FirmEmails()  # list of email domains from ins firms
+
             for row in reader:
                 # print(row['First Name'], row['Last Name'])# Just test reading
                 # Create Contact for each row in .csv- incomplete
@@ -51,7 +54,7 @@ def readCsv(fn, month):
                         "Qualification Date": row["Qualification Date"],
                         "Expiration Date": row["Expiration Date"]
                     }
-                    )
+                )
                 print(
                     "Contact: ", contact.first_name, contact.last_name,
                     contact.email)
