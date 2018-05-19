@@ -192,9 +192,16 @@ class Product:
     def __init__(self, name, owner,  desc, release_date):
         self.name = name
         self.desc = desc
-        self.dates = {"start_date": start_date, "due_date": due_date}
+        self.dates = {"release_date": release_date}
 
     def set_dates(self, dates):
+        """set_dates(dates)
+            dates is dict with {date_name : date, ...}
+            dates includes announce_date - the date the product is public
+                release_date - the date the product is available
+                start_date - the start of campaign(s) for the product
+                ...
+        """
         self.dates = dates
 
 
