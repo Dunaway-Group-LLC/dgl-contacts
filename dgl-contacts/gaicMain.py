@@ -18,6 +18,7 @@ import getopt
 import csv
 from dglContactsClasses import Contact, Contacts
 from gaicClasses import FirmEmails
+from dglPickleToS3BucketClasses import S3pickleBucket, getPickleBucket
 
 
 class Usage(Exception):
@@ -25,7 +26,7 @@ class Usage(Exception):
         self.msg = msg
 
 
-def readCsv(fn, month):
+def readCsv(fn, month, bucketName, keyName):
     """
     .csv header for download from GAIC
     License Number,License Type,First Name,Middle Name,Last Name,
@@ -34,15 +35,19 @@ def readCsv(fn, month):
 
     """
     try:
+        contactsPers = Contacts(bucketName, keyName)  # contacts-pers email
+
+        contactsFirm = Contacts(bucketName, "firm-contacts")
+        # Will be stored in dgl-contacts bucket with object id firm-contacts
+        contactsPers = contactsPers.loadContacts(pb)
+        if contactsPers.contacts == {}:     # couldn't load Contacts
+            raise FileNotFoundError("Unable to load Contacts object")
+        firm_emails = FirmEmails()  # list of email domains from ins firms
+        if firm_emails == []:
+            raise FileNotFoundError("Unable to load FirmEmails object")
+
         with open(fn, newline='') as csvfile:
             reader = csv.DictReader(csvfile)
-
-            contactsPers = Contacts("dgl-contacts")  # contacts w/pers email
-            contactsPers = contactsPers.loadContacts()
-            contactsFirm = Contacts("firm-contacts")   # contacts w/ firm email
-        # Will be stored in dgl-contacts bucket with object id firm-contacts
-
-            firm_emails = FirmEmails()  # list of email domains from ins firms
 
             for row in reader:
                 # print(row['First Name'], row['Last Name'])# Just test reading
@@ -93,7 +98,11 @@ def main(argv=None):
         # Get current month from args
         fn = args[0]
         month = args[1]
+        bucketName = args[2]
+        keyName = args[3]
         print("Args:", args, "Month: ", month)
+        # Connect bucket
+        pb = getPickleBucket(bucketName)     # bucket exists?
         # Read .csv, keeping only current month items
         readCsv(fn, month)
     except (Usage) as err:

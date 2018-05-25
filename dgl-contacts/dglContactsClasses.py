@@ -7,7 +7,7 @@
 #
 import boto3
 from botocore.exceptions import ClientError, ParamValidationError
-import pickle
+from dglPickleToS3BucketClasses import S3pickleBucket, getPickleBucket
 from io import BytesIO
 
 #
@@ -39,13 +39,14 @@ class Contacts:
 # # function defs
 #
 
-    def __init__(self,  bucketName):
+    def __init__(self,  bucketName, keyName):
         """__init__(bucketName)
-            create instance of Contacts with bucketName
+            create instance of Contacts with bucketName/keyName
             contacts instance var is init to empty dict
         """
         self.contacts = {}          # Dictionary holding Contacts, key is email
         self.bucketName = bucketName    # Bucket name holding Contacts object
+        self.keyName = keyName      # keyName / folder / object
 
     def addContact(self,  contact):
         """ addContact(contact)
@@ -84,8 +85,8 @@ class Contacts:
         else:
             return(False)
 
-    def loadContacts(self):
-        """loadContacts()
+    def loadContacts(self, bucket):
+        """loadContacts(s3PickleBucket)
                 Gets pickled Contacts object from S2
                 unpickle
                 returns Contacts
@@ -93,26 +94,20 @@ class Contacts:
                  Boto 3
 
         """
-        s3 = boto3.resource('s3')   # get S3.Object
+#        s3 = boto3.resource('s3')   # get S3.Object
 #
 # # Prove we can talk to bucket
 #
-        bucket = s3.Bucket(self.bucketName)
-        for obj in bucket.objects.all():
-            print("bucket keys", obj.key)
+#       bucket = s3.Bucket(self.bucketName)
+#        for obj in bucket.objects.all():
+#            print("bucket keys", obj.key)
 
 #        self.contacts = BytesIO()   # unpickled comes as bytes
-        try:
-            with BytesIO() as data:
-                s3.Bucket(self.bucketName).download_fileobj("contacts", data)
-                data.seek(0)    # move back to the beginning after writing
-                print("unpickel:", data)
-                self.contacts = pickle.load(data)
-                print("Unpickeled: ", self.contacts)
-        except ClientError:
-            print("The object does not exist.")
-            self.createContactsBucket(self.bucketName)   # No existing bucket
-        return(self)
+        self.contacts = bucket.loadObject("contacts")
+        if isinstance(self.contacts, dict):
+            return(self)
+        else:
+            quit(self.contacts)     # will contain error code
 
 #
 # # Pickle and store Contacts
@@ -192,16 +187,9 @@ class Product:
     def __init__(self, name, owner,  desc, release_date):
         self.name = name
         self.desc = desc
-        self.dates = {"release_date": release_date}
+        self.dates = {"start_date": start_date, "due_date": due_date}
 
     def set_dates(self, dates):
-        """set_dates(dates)
-            dates is dict with {date_name : date, ...}
-            dates includes announce_date - the date the product is public
-                release_date - the date the product is available
-                start_date - the start of campaign(s) for the product
-                ...
-        """
         self.dates = dates
 
 
